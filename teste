@@ -1,0 +1,25 @@
+import numpy
+import pyspark
+
+from pyspark.ml import Pipeline
+from pyspark.ml.classification import LogisticRegression
+
+spark = pyspark.sql.SparkSession.builder.appName('teste').getOrCreate()
+df_titanic = spark.read.csv('titanic.csv',header=True)
+df_titanic.show()
+my_cols = df_titanic.select('Survived','Pclass','Name','Sex','Age','SibSp','Parch','Fare','Embarked')
+my_cols.show()
+my_cols = df_titanic.select(['Survived','Pclass','Name','Sex','Age','SibSp','Parch','Fare','Embarked'])
+my_final_data = my_cols.na.drop()
+from pyspark.ml.feature import (VectorAssembler, VectorIndexer, OneHotEncoder, StringIndexer)
+gender_indexer = StringIndexer(inputCol='Sex',outputCol='SexIndex')
+gender_enconder = OneHotEncoder(inputCol='SexIndex',outputCol='SexVec')
+embark_indexer = StringIndexer(inputCol='Embarked',outputCol='EmbarkIndex')
+del gender_enconder
+gender_encoder = OneHotEncoder(inputCol='SexIndex',outputCol='SexVec')
+embark_encoder = OneHotEncoder(inputCol='EmbarkIndex', outputCol='EmbarkVec')
+assembler = VectorAssembler(inputCols=['Pclass','SexVec','EmbarkVec','Age','SibSp','Parch','Fare'],outputCol='features')
+log_reg_titanic = LogisticRegression(featuresCol='features',labelCol='Survived')
+pipeline = Pipeline(stages=[gender_indexer,gender_encoder,embark_indexer,embark_encoder,assembler,log_reg_titanic])
+train_data,test_data = my_final_data.randomSplit([0.7,0.3])
+fit_model = pipeline.fit(train_data)

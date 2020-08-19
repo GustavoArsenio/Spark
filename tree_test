@@ -1,0 +1,113 @@
+ ~  $ cd spark-2.4.2-bin-hadoop2.7/python/
+ ~/spark-2.4.2-bin-hadoop2.7/python  $ python3
+Python 3.6.8 (default, Jan 14 2019, 11:02:34) 
+[GCC 8.0.1 20180414 (experimental) [trunk revision 259383]] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import pyspark
+>>> from pyspark.ml.feature import VectorAssembler
+>>> from pyspark.ml.feature import StringIndexer
+>>> from pyspark.ml.classification import (DecisionTreeClassifier,GBTClassifier,RandomForestClassifier)
+>>> from pyspark.ml.regression import RandomForestRegressor
+>>> from pyspark.ml.evaluation import BinaryClassificationEvaluator
+>>> 
+>>> spark = pyspark.sql.SparkSession.builder.appName('tree_test').getOrCreate()
+19/08/31 22:57:49 WARN Utils: Your hostname, gustavoarsenio-Inspiron-5458 resolves to a loopback address: 127.0.1.1; using 192.168.1.35 instead (on interface enp7s0)
+19/08/31 22:57:49 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by org.apache.spark.unsafe.Platform (file:/home/gustavoarsenio/spark-2.4.2-bin-hadoop2.7/jars/spark-unsafe_2.12-2.4.2.jar) to method java.nio.Bits.unaligned()
+WARNING: Please consider reporting this to the maintainers of org.apache.spark.unsafe.Platform
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+19/08/31 22:57:49 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+>>> data = spark.read.csv('dog_food.csv',inferSchema=True,header=True)
+>>> data
+DataFrame[A: int, B: int, C: double, D: int, Spoiled: double]
+>>> data.show()
++---+---+----+---+-------+
+|  A|  B|   C|  D|Spoiled|
++---+---+----+---+-------+
+|  4|  2|12.0|  3|    1.0|
+|  5|  6|12.0|  7|    1.0|
+|  6|  2|13.0|  6|    1.0|
+|  4|  2|12.0|  1|    1.0|
+|  4|  2|12.0|  3|    1.0|
+| 10|  3|13.0|  9|    1.0|
+|  8|  5|14.0|  5|    1.0|
+|  5|  8|12.0|  8|    1.0|
+|  6|  5|12.0|  9|    1.0|
+|  3|  3|12.0|  1|    1.0|
+|  9|  8|11.0|  3|    1.0|
+|  1| 10|12.0|  3|    1.0|
+|  1|  5|13.0| 10|    1.0|
+|  2| 10|12.0|  6|    1.0|
+|  1| 10|11.0|  4|    1.0|
+|  5|  3|12.0|  2|    1.0|
+|  4|  9|11.0|  8|    1.0|
+|  5|  1|11.0|  1|    1.0|
+|  4|  9|12.0| 10|    1.0|
+|  5|  8|10.0|  9|    1.0|
++---+---+----+---+-------+
+only showing top 20 rows
+
+>>> assembler = VectorAssembler(inputCols=['A','B','C','D'],outputCol='features')
+>>> output = assembler.transform(data)
+>>> output
+DataFrame[A: int, B: int, C: double, D: int, Spoiled: double, features: vector]
+>>> output.select('features','Spoiled')
+DataFrame[features: vector, Spoiled: double]
+>>> final_data =  output.select('features','Spoiled')
+>>> traing_data,test_data = final_data.randomSplit([0.7,0.3])
+>>> 
+>>> 
+>>> rfc = RandomForestClassifier(labelCol='Spoiled',featuresCol='features')
+>>> rfc_model = rfc.fit(train_data)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'train_data' is not defined
+>>> rfc_model = rfc.fit(traing_data)
+>>> rfc_preds = rfc_model.transform(test_data)
+>>> my_binary_eval = BinaryClassificationEvaluator(labelCol='Spoiled')
+>>> my_binary_eval.evaluate(rfc_)
+rfc_model  rfc_preds  
+>>> my_binary_eval.evaluate(rfc_)
+rfc_model  rfc_preds  
+>>> my_binary_eval.evaluate(rfc_)
+rfc_model  rfc_preds  
+>>> my_binary_eval.evaluate(rfc_)
+rfc_model  rfc_preds  
+>>> my_binary_eval.evaluate(rfc_preds)
+0.9950980392156863
+>>> rfc_preds
+DataFrame[features: vector, Spoiled: double, rawPrediction: vector, probability: vector, prediction: double]
+>>> rfc_preds.show()
++-------------------+-------+--------------------+--------------------+----------+
+|           features|Spoiled|       rawPrediction|         probability|prediction|
++-------------------+-------+--------------------+--------------------+----------+
+|  [1.0,2.0,9.0,4.0]|    0.0|[19.8269151396458...|[0.99134575698229...|       0.0|
+|  [1.0,4.0,8.0,1.0]|    0.0|[19.6712530220156...|[0.98356265110078...|       0.0|
+|  [1.0,4.0,8.0,5.0]|    0.0|[19.7625541994865...|[0.98812770997432...|       0.0|
+|  [1.0,4.0,8.0,7.0]|    0.0|[19.5174561602709...|[0.97587280801354...|       0.0|
+|[1.0,4.0,13.0,10.0]|    1.0|[1.84014827340755...|[0.09200741367037...|       1.0|
+|  [1.0,6.0,7.0,8.0]|    0.0|[19.5217810547856...|[0.97608905273928...|       0.0|
+|  [1.0,6.0,8.0,1.0]|    0.0|[19.6393654977093...|[0.98196827488546...|       0.0|
+|  [1.0,7.0,7.0,2.0]|    0.0|[19.6393654977093...|[0.98196827488546...|       0.0|
+|  [1.0,7.0,8.0,2.0]|    0.0|[19.6393654977093...|[0.98196827488546...|       0.0|
+| [1.0,7.0,11.0,9.0]|    1.0|[1.69729113055041...|[0.08486455652752...|       1.0|
+|  [1.0,8.0,8.0,8.0]|    0.0|[19.5217810547856...|[0.97608905273928...|       0.0|
+| [1.0,9.0,10.0,6.0]|    0.0|[17.4049197120708...|[0.87024598560354...|       0.0|
+|[1.0,10.0,12.0,3.0]|    1.0|[1.94283737571408...|[0.09714186878570...|       1.0|
+|  [2.0,1.0,8.0,9.0]|    0.0|[19.9533080386199...|[0.99766540193099...|       0.0|
+|  [2.0,1.0,8.0,9.0]|    0.0|[19.9533080386199...|[0.99766540193099...|       0.0|
+|  [2.0,2.0,8.0,1.0]|    0.0|[19.6769348401975...|[0.98384674200987...|       0.0|
+|  [2.0,3.0,6.0,9.0]|    0.0|[19.5174561602709...|[0.97587280801354...|       0.0|
+|  [2.0,3.0,9.0,3.0]|    0.0|[18.7379196886823...|[0.93689598443411...|       0.0|
+| [2.0,3.0,12.0,3.0]|    1.0|[0.09018175074833...|[0.00450908753741...|       1.0|
+| [2.0,4.0,11.0,8.0]|    1.0|[1.65183658509586...|[0.08259182925479...|       1.0|
++-------------------+-------+--------------------+--------------------+----------+
+only showing top 20 rows
+
+>>> rfc_model.featureImportances
+SparseVector(4, {0: 0.032, 1: 0.0267, 2: 0.887, 3: 0.0542})
